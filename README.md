@@ -34,3 +34,6 @@ Each stage is intended to keep human attention focused on judgment calls,
 while machine-verifiable checks are enforced deterministically rather than
 through advisory prose.
 
+See [docs/principles.md](docs/principles.md) for the principles guiding this
+project, and [docs/architecture.md](docs/architecture.md) for how the
+repository is organized.
