@@ -238,11 +238,24 @@ or:
 STATUS: BLOCKED
 ```
 
-Run:
+Always run the strict validator yourself before reporting any readiness. Never
+ask the user to run it, and never treat this step as optional:
 
 ```bash
 python .claude/skills/rigorail-spec/scripts/validate_spec.py specs/<slug>
 ```
+
+Its exit code decides:
+
+- `0` — structurally valid with no open product decision; readiness is allowed;
+- `1` — structural or provenance failure; the spec is not ready;
+- `2` — structurally valid, but an `OPEN_PRODUCT_DECISION` still blocks the
+  freeze.
+
+A failing validator is never overridden by review prose. Do not set
+`STATUS: READY`, and do not claim the spec is frozen, unless the strict
+validator actually exited `0`. When it does not, surface its output — the
+`ERROR:` lines name what to fix — rather than only its exit code.
 
 During drafting, if intentionally open product decisions remain, use:
 
@@ -250,7 +263,8 @@ During drafting, if intentionally open product decisions remain, use:
 python .claude/skills/rigorail-spec/scripts/validate_spec.py --allow-open specs/<slug>
 ```
 
-Do not claim the spec is frozen if the strict validator fails.
+`--allow-open` is a drafting aid. It never establishes freeze: only the strict
+run does.
 
 ### Phase 7 — Freeze
 
@@ -261,7 +275,7 @@ Freeze the spec only when all are true:
 - no unresolved high-impact product ambiguity remains;
 - no grounding blocker remains;
 - the spec is internally consistent enough to implement;
-- strict deterministic validation passes;
+- strict deterministic validation was run in this workflow and exited `0`;
 - the human approves the semantic gate when a human decision was required.
 
 A frozen product spec may still contain `OPEN_TECHNICAL_DECISION` entries if they do not alter product behavior.
@@ -330,14 +344,27 @@ During a normal run:
 
 ## Completion response
 
-When the workflow finishes, report only:
+Report the outcome, not the choreography. On success:
+
+```text
+✓ specification artifacts produced
+✓ grounding/provenance review passed
+✓ ambiguity review passed
+✓ deterministic validator passed
+SPEC FROZEN
+```
+
+Then report only:
 
 - artifact paths;
 - `READY` or `BLOCKED`;
 - number of open product decisions;
 - number of open technical decisions;
 - number of unsupported/blocking findings;
-- deterministic validator result;
+- the deterministic validator command and its exit code;
 - the next action.
+
+Show individual commands and their output only when a step failed, or when the
+user asks for them.
 
 Do not move into technical design unless the user asks.
