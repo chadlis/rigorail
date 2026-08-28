@@ -35,3 +35,9 @@ jobs:
           uv run python -m unittest discover \
             .claude/skills/rigorail-spec/tests \
             -p 'test_*.py' -v
+
+      - name: Rigorail design skill tests
+        run: |
+          uv run python -m unittest discover \
+            .claude/skills/rigorail-design/tests \
+            -p 'test_*.py' -v

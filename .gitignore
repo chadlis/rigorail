@@ -7,3 +7,9 @@ dist/
 *.egg-info/
 .DS_Store
 experiments/
+
+# Spec Kit workspace and its Claude-facing skills. Scaffolded offline from the
+# pinned specify-cli dev dependency, so they are regenerated rather than
+# vendored: uv run python -m rigorail.speckit_setup
+.specify/
+.claude/skills/speckit-*/
