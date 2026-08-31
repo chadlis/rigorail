@@ -13,7 +13,7 @@ from rigorail import speckit_setup as s
 # --------------------------------------------------------------------------
 
 
-def make_feature(root, slug="team-invites", artifacts=("spec.md", "decisions.md")):
+def make_feature(root, slug="team-invites", artifacts=("product-spec.md", "decisions.md")):
     feature = root / "specs" / slug
     feature.mkdir(parents=True)
     for name in artifacts:
@@ -58,7 +58,7 @@ def test_missing_feature_directory_fails(tmp_path):
 
 
 def test_feature_directory_without_contract_fails(tmp_path):
-    make_feature(tmp_path, artifacts=("spec.md",))
+    make_feature(tmp_path, artifacts=("product-spec.md",))
     with pytest.raises(p.PreflightError, match="decisions.md"):
         p.resolve_feature_dir(tmp_path, "specs/team-invites")
 

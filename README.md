@@ -41,42 +41,47 @@ Those go to a language model, or to you. Neither side does the other's work.
 
 ## Status
 
-**Experimental.** Two stages of the pipeline below exist. The rest is not built
-yet. It is **not currently ready for external use**.
+**Experimental.** The specification stage below is the one that is finished and
+meant to be used. Everything downstream of the frozen contract is not built
+here yet. It is **not currently ready for external use**.
 
-## Intended pipeline
+## Where Rigorail starts and stops
 
 ```text
-product discovery
-→ business spec
-→ human spec review
-→ technical design
-→ human design review
-→ implementation
-→ deterministic gates
-→ independent review
-→ targeted human code review
-→ deterministic CI
-→ measurement
+informal product source
+→ /rigorail-spec
+→ docs/
+   ├── source.md
+   ├── product-spec.md
+   ├── decisions.md
+   └── discovery-review.md
+→ frozen desired product state
+→ (downstream: backlog slicing, per-change planning, implementation)
 ```
 
-Each stage is intended to keep human attention focused on judgment calls,
-while machine-verifiable checks are enforced deterministically rather than
-through advisory prose.
+`docs/` holds **one contract for the whole product**, not one per feature. Its
+`§` ids are what a feature is addressed by later: a piece of work delivers
+`§1.2` and `§C1`, it does not get a specification of its own. Everything past
+the frozen contract — how work is sliced, tracked, planned per change, and
+implemented — is downstream of Rigorail Spec and is not built in this
+repository.
 
-Two stages exist today. You run them as skills in Claude Code:
+You run Rigorail as skills in Claude Code:
 
 - **`/rigorail-spec`** turns raw product context into a frozen product contract.
-- **`/rigorail-design`** turns that contract into a reviewed technical design.
+  This is the entry point, and it is where the default workflow ends.
+- **`/rigorail-design`** turns a frozen contract into a reviewed technical
+  design. It remains available for experiments and for work that genuinely
+  needs an explicit Rigorail design phase. It is **not** a mandatory stage
+  before every downstream feature.
 
-Neither of them writes the feature. They decide what to build and how, then
-stop.
+Neither of them writes the feature.
 
-Each stage ends with a **freeze**. A frozen document is one that passed its
-review and its automatic checks, so the next stage is allowed to start from it.
-Nothing becomes read-only. The freeze is a state you confirm by running a
-script, and you can confirm it again at any time. There is more detail in
-[What "frozen" means](#what-frozen-means) at the end of this file.
+A stage ends with a **freeze**. A frozen document is one that passed its review
+and its automatic checks. Nothing becomes read-only. The freeze is a state you
+confirm by running a script, and you can confirm it again at any time. There is
+more detail in [What "frozen" means](#what-frozen-means) at the end of this
+file.
 
 ## Worked example
 
@@ -106,32 +111,63 @@ you can invite an address that has no account yet, and who is allowed to accept
 an invitation. It does not answer these for you. It never asks about naming,
 status codes, or table layout, because those belong to the design stage.
 
-It produces three files:
+It produces four files:
 
 ```text
-specs/team-invites/
-├── spec.md         # the product contract
-├── decisions.md    # where every rule came from
-└── review.md       # what the reviews found
+docs/
+├── source.md             # your words, kept verbatim
+├── product-spec.md       # the product contract
+├── decisions.md          # where every rule came from
+└── discovery-review.md   # what the reviews found
 ```
 
-#### `spec.md`, the contract
+The validator accepts a directory argument, but the canonical project contract
+lives in `docs/`, and there is one of them for the whole product. As the
+product grows, later runs extend the same four files — new `§` ids, new ledger
+entries — rather than starting a second contract somewhere else.
 
-Requirements are numbered so that other files can refer to them. `FR` means
-**functional requirement**: something the system must do. `SC` means **success
-criterion**: a visible result that shows the feature works.
+#### `source.md`, the input
+
+Your original text, unedited. The skill never tidies it into a cleaner brief,
+never mixes its own interpretation into it, and never reads product rules out
+of it by itself. It exists so that "the source says so" can be checked against
+something that a machine did not write.
+
+#### `product-spec.md`, the contract
+
+Every firm statement carries a **Product ID**, so other files can address it.
+`§n.m` is a behavior: something the product must do. `§Cn` is a constraint: a
+property the product must satisfy continuously.
 
 ```md
-- **FR-001**: A team owner MUST be able to invite a person to their team by email address. <!-- provenance: S-001 -->
-- **FR-002**: An invited person MUST NOT have access to the team before they accept. <!-- provenance: S-001 -->
-- **SC-001**: A team owner can invite a person by email address, and that person has no access until they accept. <!-- provenance: S-001 -->
+## §1 Invitations
+
+- **§1.1** — A team owner can invite a person to their team by email address. <!-- provenance: S-001 -->
+- **§1.2** — An invited person has no access to the team before they accept. <!-- provenance: S-001 -->
+
+## §C Constraints
+
+- **§C1** — An invitation is addressed by email address. <!-- provenance: S-001 -->
 ```
 
+One `§` is **one product obligation**. "A user can create, edit, delete, and
+share a note" is four obligations wearing one id, and an id that covers four
+things cannot be tracked, delivered, or tested as one. Atomicity is a judgment,
+not a word count: "a user can create a note with a title and body" is one
+obligation and stays one.
+
+Ids are **semantically stable**. Rewording an obligation keeps its id. Changing
+what the product must do gets a new id, and the old one is listed under
+`## Withdrawn` rather than quietly reused, so nothing that referred to `§1.3`
+ends up pointing at a different promise than the one it was written against.
+
 The HTML comment at the end of each line is a **provenance marker**. It does
-not appear when the Markdown is displayed. It names what authorized the rule,
-here the source `S-001`. Every `FR-*` and `SC-*` line must have one. This is
-the rule that makes invented requirements visible: if a rule has nothing to
-refer to, it cannot be written as if someone had approved it.
+not appear when the Markdown is displayed. It names what authorized the
+statement, here the source `S-001`. Every firm statement must have one.
+
+An id and a provenance marker answer two different questions, and both are
+required. The id makes a statement **addressable**. The marker makes it
+**grounded**. An id on an invented rule is an invented rule with an id.
 
 #### `decisions.md`, the ledger
 
@@ -139,88 +175,122 @@ Markers point to entries in this file. Identifiers that start with `S-` are
 sources. Identifiers that start with `D-` are decisions.
 
 ```md
-- **S-001** [SOURCE_FACT] — raw product draft: "A team owner can invite people
-  to their team by email address. Invited people get access once they accept."
+- **S-001** — source.md block S-001 — the product draft, verbatim
 
-- **D-001** [NEW_HUMAN_DECISION] [risk:high] [status:decided] — access granted on
-  acceptance — a person who accepts becomes a team member who can use the team's
-  resources, and cannot manage the team or invite others
+- **D-001** [2026-09-02] [PRODUCT] [HUMAN] [status:decided] [risk:high] — §1.2 —
+  a person who accepts becomes a team member who can use the team's resources,
+  and cannot manage the team or invite others — decided by the human on the
+  access question — reversible:Y
 
-- **D-004** [OPEN_TECHNICAL_DECISION] [risk:low] [status:open] — how an
-  invitation reaches the invited address is deferred to technical design
+- **D-004** [2026-09-02] [TECHNICAL] [HUMAN] [status:open] [risk:low] — delivery —
+  how an invitation reaches the invited address — deferred to technical design —
+  reversible:Y
 ```
 
-The tag in brackets is the **provenance type**. It decides whether the entry is
-allowed to justify a firm rule.
+Each entry carries two independent tags and a state:
 
-| Type | Meaning | Can justify a rule? |
+| Axis | Values | What it says |
 |---|---|---|
-| `SOURCE_FACT` | stated in your source material | yes |
-| `PREVIOUS_HUMAN_DECISION` | you decided this earlier | yes |
-| `NEW_HUMAN_DECISION` | you decided this during the run | yes |
-| `INFERENCE` | plausible, but nobody approved it | no |
-| `TECHNICAL_DECISION` | an implementation choice, not a product rule | no |
-| `OPEN_PRODUCT_DECISION` | a product question left unanswered on purpose | no, and the spec cannot be frozen |
-| `OPEN_TECHNICAL_DECISION` | postponed to the design stage | no, but the spec can still be frozen |
+| layer | `PRODUCT`, `TECHNICAL` | whether this is a promise to a user or an implementation choice |
+| provenance | `SOURCE`, `HUMAN`, `INFERRED` | who or what established it |
+| status | `decided`, `open`, `unconfirmed` | whether it is settled |
 
-The three rows marked "yes" are the core of the method. A guess can be stored
-as an `INFERENCE`, but it can never become a `MUST` until a person turns it
-into a decision. This is what would have stopped the invented length rule.
+Only two combinations can justify a firm statement: an `S-###` source, or a
+`PRODUCT` decision that is `decided` and whose provenance is `SOURCE` or
+`HUMAN`. A `SOURCE` entry must cite the source it rests on.
 
-The two `OPEN_*` types do the other half of the work. A question you have not
-answered stays visible as a question.
+`INFERRED` is the important one. A guess can be recorded, but it cannot be
+marked `decided` — the checks reject that outright. It becomes a rule only when
+a person decides it, which produces a `HUMAN` entry. This is what would have
+stopped the invented length rule.
 
-The two types differ in what happens next. An open **product** question keeps
-the spec unfrozen: the checks fail, and the design stage refuses to start on it
-and tells you why. This is deliberate, because building without an answer means
-somebody will guess it. An open **technical** question blocks nothing, because
-the design stage is exactly where it gets answered.
+`status:open` does the other half of the work. A question you have not answered
+stays visible as a question. An open **product** question keeps the contract
+unfrozen: the checks fail, and the design stage refuses to start and tells you
+why. This is deliberate, because building without an answer means somebody will
+guess it. An open **technical** question blocks nothing, because the design
+stage is exactly where it gets answered.
 
-#### Checking the spec
+#### `discovery-review.md`, and the gate
 
-Before it reports anything, the skill checks the spec with a script instead of
-asking you to read it. No model is used. It is a normal Python program that
+The review records what grounding and ambiguity review found, whether any
+**unresolved assumptions** remain — "None identified." is a valid answer, an
+empty section is not — and whether you approved the contract:
+
+```text
+STATUS: READY
+GATE: APPROVED
+```
+
+`GATE:` is the human semantic gate. It answers one question that no script can:
+does this describe the product you intend to build? A contract is not frozen
+because its syntax passed. The checks below record that the gate happened; they
+never perform it.
+
+#### Checking the contract
+
+Before it reports anything, the skill checks the contract with a script instead
+of asking you to read it. No model is used. It is a normal Python program that
 passes or fails, so it gives the same answer every time and CI can run it.
 
-It checks only what a program can check: that `spec.md` has the required
-sections, that every `FR-*` and `SC-*` has a marker, and that each marker
-points to an entry that is allowed to justify a rule. It cannot tell you
-whether the spec describes the right product. The reviews and your own judgment
-do that.
+It checks only what a program can check: that the four files exist and
+`source.md` is not empty, that the required sections are present, that Product
+IDs parse and are unique and sit in a matching section, that every firm
+statement has one marker pointing at an entry allowed to justify it, that
+ledger entries use valid tags and that an inference is not marked decided, and
+that `§` references resolve. It warns — never blocks — when a statement
+enumerates several actions, or carries a number that looks invented.
+
+It cannot tell you whether the contract describes the right product, and it
+cannot prove a statement is atomic. The reviews, the gate, and your own
+judgment do that.
 
 | Exit | Meaning |
 |---|---|
 | `0` | passed |
-| `1` | something is missing or malformed: a section, a marker, a reference |
+| `1` | something is missing or malformed: a section, an id, a marker, a reference |
 | `2` | structurally fine, but a question you left open is still open |
 
 Exit code `2` is the one to understand. When you answer a question with "leave
-open", the skill records an `OPEN_PRODUCT_DECISION`. This blocks the freeze on
+open", the skill records an open `PRODUCT` decision. This blocks the freeze on
 purpose, which is the reason for recording it.
 
 The skill cannot talk its way past a failure. `SPEC FROZEN` is reported only
 after the strict check actually exited `0`, so the run ends like this:
 
 ```text
-✓ specification artifacts produced
+✓ product contract artifacts produced
 ✓ grounding/provenance review passed
 ✓ ambiguity review passed
+✓ human semantic gate approved
 ✓ deterministic validator passed
 SPEC FROZEN
 ```
 
-### 2. From a frozen spec to a reviewed technical design
+That is where this stage stops. `/rigorail-spec` owns the road from an informal
+source to a frozen desired product state, and nothing after it: backlog
+tracking, change planning, implementation, and repository-wide delivery
+invariants are downstream concerns. None of them exist in this repository yet,
+and none of them belong in the specification skill.
 
-Run the design skill with the feature directory:
+### 2. Optional: from a frozen contract to a reviewed technical design
+
+This stage is not part of the default lifecycle. Rigorail Spec ends at the
+frozen contract; how that contract becomes shipped work is downstream and lives
+outside this repository. `/rigorail-design` remains available for experiments,
+and for work that genuinely needs an explicit Rigorail design phase before
+anyone writes code. Skip this section if you only wanted the contract.
+
+Run the design skill with the directory holding the contract:
 
 ```text
-/rigorail-design specs/team-invites
+/rigorail-design docs
 ```
 
 That is the whole command. Before planning starts, one deterministic preflight
 confirms the specification really is frozen, installs the pinned Spec Kit if it
-is missing, points Spec Kit at this feature, and creates
-`specs/team-invites/technical-context.md` if you have not written one.
+is missing, points Spec Kit at that directory, and creates
+`docs/technical-context.md` if you have not written one.
 
 That last file holds the technical constraints that outrank the planner's
 judgment: the stack, what stores the data, what the implementation can assume
@@ -343,12 +413,12 @@ Everything the design workflow needs before planning, in one idempotent command.
 The design skill runs this itself; running it again changes nothing:
 
 ```bash
-uv run python -m rigorail.design_preflight specs/team-invites
+uv run python -m rigorail.design_preflight docs
 ```
 
 It checks the spec is frozen, prepares Spec Kit, creates `technical-context.md`
-if it is absent, and pins the feature directory. It never rewrites a
-`technical-context.md` you wrote.
+if it is absent, and pins the directory Spec Kit will plan in. It never
+rewrites a `technical-context.md` you wrote.
 
 Install or repair the pinned Spec Kit workspace on its own:
 
@@ -359,8 +429,8 @@ uv run python -m rigorail.speckit_setup
 Run either validator by hand:
 
 ```bash
-uv run python .claude/skills/rigorail-spec/scripts/validate_spec.py specs/team-invites
-uv run python .claude/skills/rigorail-design/scripts/validate_design.py specs/team-invites
+uv run python .claude/skills/rigorail-spec/scripts/validate_spec.py docs
+uv run python .claude/skills/rigorail-design/scripts/validate_design.py docs
 ```
 
 While you are still drafting a spec and expect an open product decision, add
@@ -368,7 +438,7 @@ While you are still drafting a spec and expect an open product decision, add
 drafting aid and never establishes a freeze:
 
 ```bash
-uv run python .claude/skills/rigorail-spec/scripts/validate_spec.py --allow-open specs/team-invites
+uv run python .claude/skills/rigorail-spec/scripts/validate_spec.py --allow-open docs
 ```
 
 Spec Kit resolves its target feature from `SPECIFY_FEATURE_DIRECTORY`, and
@@ -377,14 +447,14 @@ command it runs, which makes Spec Kit persist the second, so you never need to
 export anything. If you are driving Spec Kit directly, you still can:
 
 ```bash
-SPECIFY_FEATURE_DIRECTORY=specs/team-invites .specify/scripts/bash/setup-plan.sh --json
+SPECIFY_FEATURE_DIRECTORY=docs .specify/scripts/bash/setup-plan.sh --json
 ```
 
 ## What "frozen" means
 
-A spec is frozen when `review.md` says `READY` and its validator exits `0`. A
-design is frozen when `design-review.md` says `READY` and its validator exits
-`0`.
+A product contract is frozen when `discovery-review.md` says `READY`, its gate
+says `APPROVED`, and its validator exits `0`. A design is frozen when
+`design-review.md` says `READY` and its validator exits `0`.
 
 There is no lock file, and no file becomes read-only. Freezing is a statement
 you can check again at any time by running one command. This also means that

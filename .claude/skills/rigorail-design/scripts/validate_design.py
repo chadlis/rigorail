@@ -2,7 +2,7 @@
 """Deterministic validator for Rigorail technical-design artifacts.
 
 This validator checks only machine-checkable properties of `design-review.md`
-and its accounting against the `OPEN_TECHNICAL_DECISION` entries declared in
+and its accounting against the open `TECHNICAL` decisions declared in
 `decisions.md`.
 
 It deliberately does NOT judge whether a technical choice is good, whether prose
@@ -82,7 +82,11 @@ SEVERITY_TAG_RE = re.compile(r"^-\s+\[([A-Za-z_]+)\]")
 FIELD_RE = re.compile(r"^\s{2,}-\s+([A-Za-z][A-Za-z /]*):\s*(\S.*)$")
 LEDGER_RE = re.compile(r"^-\s+(D-\d{3,})\s+—\s*(\S.*)$")
 NONE_RE = re.compile(r"^None\.?$", re.IGNORECASE)
-DECISION_RE = re.compile(r"^- \*\*(D-\d{3,})\*\* \[([A-Z_]+)\]", re.MULTILINE)
+DECISION_RE = re.compile(
+    r"^- \*\*(D-\d{3,})\*\* \[\d{4}-\d{2}-\d{2}\] \[([A-Za-z_]+)\] \[[A-Za-z_]+\] "
+    r"\[status:([A-Za-z_]+)\]",
+    re.MULTILINE,
+)
 
 
 @dataclass
@@ -266,12 +270,16 @@ def validate(design_dir: Path) -> Result:
     else:
         decisions = decisions_path.read_text(encoding="utf-8")
         entries = DECISION_RE.findall(decisions)
-        open_product = sorted(i for i, t in entries if t == "OPEN_PRODUCT_DECISION")
-        open_technical = sorted(i for i, t in entries if t == "OPEN_TECHNICAL_DECISION")
+        open_product = sorted(
+            i for i, layer, status in entries if layer == "PRODUCT" and status == "open"
+        )
+        open_technical = sorted(
+            i for i, layer, status in entries if layer == "TECHNICAL" and status == "open"
+        )
 
         for decision_id in open_product:
             errors.append(
-                f"{DECISIONS_FILENAME} still declares OPEN_PRODUCT_DECISION {decision_id}; "
+                f"{DECISIONS_FILENAME} still declares open PRODUCT decision {decision_id}; "
                 "the specification is not approved for technical design"
             )
 
@@ -281,19 +289,19 @@ def validate(design_dir: Path) -> Result:
             for decision_id in sorted(resolved_ids - set(open_technical)):
                 errors.append(
                     f"{RESOLVED_SECTION} lists {decision_id}, which {DECISIONS_FILENAME} does "
-                    "not declare as an OPEN_TECHNICAL_DECISION"
+                    "not declare as an open TECHNICAL decision"
                 )
             for decision_id in open_technical:
                 in_resolved = decision_id in resolved_ids
                 in_unresolved = decision_id in unresolved_ids
                 if in_resolved and in_unresolved:
                     errors.append(
-                        f"OPEN_TECHNICAL_DECISION {decision_id} is listed both as resolved "
+                        f"open TECHNICAL decision {decision_id} is listed both as resolved "
                         "and as unresolved"
                     )
                 elif not in_resolved and not in_unresolved:
                     errors.append(
-                        f"OPEN_TECHNICAL_DECISION {decision_id} from {DECISIONS_FILENAME} is "
+                        f"open TECHNICAL decision {decision_id} from {DECISIONS_FILENAME} is "
                         f"accounted for neither under {RESOLVED_SECTION} nor under "
                         "UNRESOLVED_TECHNICAL_DECISIONS"
                     )

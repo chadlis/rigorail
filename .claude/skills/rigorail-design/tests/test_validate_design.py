@@ -50,16 +50,18 @@ None.
 DECISIONS = """# Decision Ledger
 
 ## Sources
-- **S-001** [SOURCE_FACT] — source — authority
+- **S-001** — source — authority
 
 ## Decisions
-- **D-001** [NEW_HUMAN_DECISION] [risk:high] [status:decided] — topic — decision — evidence: user
+- **D-001** [2026-09-02] [PRODUCT] [HUMAN] [status:decided] [risk:high] — topic — \
+decision — rationale — reversible:Y
 
 ## Decision History
 """
 
 OPEN_TECHNICAL_DECISION_LINE = (
-    "\n- **D-002** [OPEN_TECHNICAL_DECISION] [risk:medium] [status:open] — session storage\n"
+    "\n- **D-002** [2026-09-02] [TECHNICAL] [HUMAN] [status:open] [risk:medium] — "
+    "session storage — deferred — reversible:Y\n"
 )
 
 FINDING_TEMPLATE = """- [{severity}] {identifier} — {summary}
@@ -249,7 +251,7 @@ class ValidatorTests(unittest.TestCase):
         wrapped = (
             "- [MEDIUM] F-001 — plan assumes the framework enforces uniqueness\n"
             '  - Evidence: data-model.md, "link table" section\n'
-            "  - Authoritative inputs: spec.md SC-004 requires the invariant; no source proves\n"
+            "  - Authoritative inputs: product-spec.md §4.1 needs the invariant; no source proves\n"
             "    the framework enforces it\n"
             "  - Classification: INFERENCE\n"
             "  - Required action: verify before implementation; add an explicit constraint if\n"
@@ -261,7 +263,7 @@ class ValidatorTests(unittest.TestCase):
         self.assertEqual([], result.errors)
         self.assertTrue(result.ready)
         self.assertEqual(
-            "spec.md SC-004 requires the invariant; no source proves the framework enforces it",
+            "product-spec.md §4.1 needs the invariant; no source proves the framework enforces it",
             result.findings[0].fields["authoritative inputs"],
         )
         self.assertEqual(0, module.main([str(design_dir)]))
@@ -496,7 +498,8 @@ class ValidatorTests(unittest.TestCase):
 
     def test_open_product_decision_blocks_design(self):
         decisions = DECISIONS + (
-            "\n- **D-003** [OPEN_PRODUCT_DECISION] [risk:high] [status:open] — refunds\n"
+            "\n- **D-003** [2026-09-02] [PRODUCT] [HUMAN] [status:open] [risk:high] — "
+            "refunds — undecided — reversible:Y\n"
         )
         result = module.validate(self.make_design(decisions_text=decisions))
         self.assertTrue(any("D-003" in e and "not approved" in e for e in result.errors))

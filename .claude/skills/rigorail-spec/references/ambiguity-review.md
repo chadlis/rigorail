@@ -9,7 +9,8 @@ This is not a grounding review. Do not spend time re-proving sourced rules.
 Prefer a reviewer that did not draft the spec. Give it:
 
 - authoritative sources;
-- `spec.md`;
+- `source.md`;
+- `product-spec.md`;
 - `decisions.md`.
 
 Do not provide previous reviewers' recommendations or hidden expected answers.
@@ -62,6 +63,10 @@ Never infer the answer from:
 - framework defaults;
 - an architectural preference.
 
-If a high-impact answer is not authorized, return it as a **candidate product decision** to the orchestrator. The reviewer is read-only and must not edit `decisions.md` or `spec.md`. Only create `OPEN_PRODUCT_DECISION` after the human explicitly defers the question.
+If a high-impact answer is not authorized, return it as a **candidate product decision** to the orchestrator. The reviewer is read-only and must not edit `decisions.md`, `product-spec.md`, or `source.md`. Only record a `[PRODUCT] … [status:open]` entry after the human explicitly defers the question.
 
 Return at most five findings, highest risk first. Low-impact optional-capability observations may be omitted.
+
+Whichever way the review lands, the orchestrator must record the outcome in
+`discovery-review.md > Unresolved Assumptions`. "None identified." is a valid
+result; an empty section is not. Never invent an assumption to fill it.

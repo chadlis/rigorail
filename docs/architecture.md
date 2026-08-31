@@ -26,11 +26,24 @@ Tests for `src/rigorail/`.
 Two Rigorail skills, each pairing an LLM-judgment workflow with deterministic
 Python tooling that is run rather than trusted:
 
-- `rigorail-spec/` — produce, review, and freeze a product specification.
+- `rigorail-spec/` — produce, review, and freeze a product contract:
+  `source.md` (the informal input, verbatim), `product-spec.md` (addressable
+  `§n.m` behaviors and `§Cn` constraints), `decisions.md` (an append-only
+  ledger carrying layer, provenance, and status), and `discovery-review.md`
+  (grounding, ambiguity, unresolved assumptions, and the human semantic
+  gate). One product has one such contract, and `docs/` is where it lives; the
+  validator takes a directory argument, but per-feature contracts are not the
+  intended usage. Its `scripts/validate_spec.py` checks addressability,
+  provenance, references, and structure, and fails closed on anything that
+  visibly tries to be a product statement; it does not judge semantics. The
+  skill stops at the frozen contract: backlog, delivery, and implementation
+  state are outside it.
 - `rigorail-design/` — turn a frozen specification into an implementation-ready
-  technical design, and review that design against its product contract. Its
-  `scripts/validate_design.py` validator and `tests/` are deterministic and
-  carry their own test suite. The validator also derives the next action from
+  technical design, and review that design against its product contract. It is
+  available for experiments and for work that needs an explicit Rigorail design
+  phase; it is not a mandatory stage between the frozen contract and downstream
+  delivery. Its `scripts/validate_design.py` validator and `tests/` are
+  deterministic and carry their own test suite. The validator also derives the next action from
   the review's findings — freeze, replan, or ask the human — and bounds the
   automatic repair loop, so routing is decided by a program rather than by the
   reviewer's reading of its own review.

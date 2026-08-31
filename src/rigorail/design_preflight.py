@@ -38,7 +38,7 @@ from rigorail import speckit_setup
 TECHNICAL_CONTEXT_FILENAME = "technical-context.md"
 """Level-2 authority: technical constraints that outrank planner judgment."""
 
-REQUIRED_CONTRACT_ARTIFACTS = ("spec.md", "decisions.md")
+REQUIRED_CONTRACT_ARTIFACTS = ("product-spec.md", "decisions.md")
 
 SPEC_VALIDATOR = Path(".claude/skills/rigorail-spec/scripts/validate_spec.py")
 SETUP_PLAN = Path(".specify/scripts/bash/setup-plan.sh")
@@ -109,9 +109,9 @@ def resolve_feature_dir(root: Path, requested: str | Path) -> Path:
 def verify_frozen_spec(root: Path, feature_dir: Path) -> None:
     """Run the ``rigorail-spec`` validator strictly; anything but ``0`` fails.
 
-    Exit ``1`` means malformed or ungrounded artifacts, exit ``2`` means an
-    ``OPEN_PRODUCT_DECISION`` is still open. Neither is an approved contract, so
-    neither may start technical design.
+    Exit ``1`` means malformed or ungrounded artifacts, exit ``2`` means an open
+    ``PRODUCT`` decision remains. Neither is an approved contract, so neither may
+    start technical design.
     """
     validator = root / SPEC_VALIDATOR
     if not validator.is_file():
@@ -299,7 +299,7 @@ def technical_context_skeleton(facts: list[Fact]) -> str:
         "# Technical Context",
         "",
         "Constraints that outrank planner judgment. Decided product behavior belongs in",
-        "`spec.md` and `decisions.md`, never here.",
+        "`product-spec.md` and `decisions.md`, never here.",
         "",
         "## Repository facts",
         "",

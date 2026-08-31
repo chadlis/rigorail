@@ -9,6 +9,14 @@ Rigorail is a thin control layer around an external planner. It does not plan.
 It decides when planning is allowed to start, and whether the produced design
 may be trusted as a product contract implementation.
 
+This is an optional stage. `rigorail-spec` ends at the frozen whole-product
+contract in `docs/`; what happens between that contract and shipped code is
+downstream of Rigorail. Use this skill when a piece of work genuinely needs an
+explicit Rigorail technical-design phase, or for experiments. It is not a
+mandatory step before every feature, and it does not turn the product contract
+into a per-feature document: it plans against the same `docs/` contract,
+addressing the `§` ids it implements.
+
 The failure this skill exists to catch:
 
 > While concretizing a spec into schemas, routes, states, and contracts, a
@@ -68,18 +76,18 @@ completion response. Do not perform its steps by hand, and do not ask the user
 to perform them:
 
 ```bash
-uv run python -m rigorail.design_preflight specs/<slug>
+uv run python -m rigorail.design_preflight docs
 ```
 
 It establishes, in order:
 
-1. the feature directory named by the argument exists and holds `spec.md` and
-   `decisions.md`;
+1. the feature directory named by the argument exists and holds
+   `product-spec.md` and `decisions.md`;
 2. **the specification is frozen** — it runs the `rigorail-spec` validator
    strictly and requires exit `0`, so approval is a verified exit code rather
    than a claim. Exit `1` (malformed or ungrounded artifacts) and exit `2` (an
-   `OPEN_PRODUCT_DECISION` is still open) each mean the contract is not approved
-   for technical design;
+   open `PRODUCT` decision remains) each mean the contract is not approved for
+   technical design;
 3. the pinned Spec Kit workspace is present and valid, scaffolding it through
    `rigorail.speckit_setup` only when it is missing or incomplete, and refusing
    to reconcile a workspace that records a different version;
@@ -102,26 +110,26 @@ manual maintenance and debugging. It is not part of the normal workflow.
 The workflow requires at minimum:
 
 ```text
-spec.md
+product-spec.md
 decisions.md
 technical-context.md
 ```
 
 Authority order, highest first:
 
-1. decided product behavior in `spec.md` and `decisions.md`;
+1. decided product behavior in `product-spec.md` and `decisions.md`;
 2. technical constraints in `technical-context.md`;
 3. planner technical judgment.
 
 A lower level never overrides a higher one. Planner judgment is authoritative
 only where the two levels above are silent *and* the choice is technical.
 
-`spec.md` and `decisions.md` come from `rigorail-spec`. `technical-context.md`
-does not: no workflow produces it. The preflight creates it when it is absent
-and leaves an existing one untouched. It records the constraints that outrank
-planner judgment — and nothing else. Keep decided product behavior out of it:
-product authority lives at level 1, and a product rule smuggled in here would
-carry the wrong authority.
+`product-spec.md` and `decisions.md` come from `rigorail-spec`.
+`technical-context.md` does not: no workflow produces it. The preflight creates
+it when it is absent and leaves an existing one untouched. It records the
+constraints that outrank planner judgment — and nothing else. Keep decided
+product behavior out of it: product authority lives at level 1, and a product
+rule smuggled in here would carry the wrong authority.
 
 The generated skeleton keeps the authority boundary visible:
 
@@ -163,12 +171,12 @@ technical choice and belongs to the planner.
 
 ## Outputs
 
-Work in the feature directory that already holds the frozen spec, so the design
-sits beside its product contract:
+Work in the directory that already holds the frozen contract, so the design
+sits beside it:
 
 ```text
-specs/<slug>/
-├── spec.md                 # input, unchanged
+docs/
+├── product-spec.md         # input, unchanged
 ├── decisions.md            # input; product decisions originate from the human
 ├── technical-context.md    # input, unchanged
 ├── <Spec Kit plan artifacts>
@@ -199,7 +207,7 @@ re-derive them by reading the files, and do not ask the user to confirm them:
 
 - the Spec Kit workspace is the pinned, verified one;
 - the specification is frozen — `validate_spec.py` exited `0`, which also means
-  no `OPEN_PRODUCT_DECISION` remains in `decisions.md`;
+  no open `PRODUCT` decision remains in `decisions.md`;
 - `technical-context.md` exists.
 
 Open technical decisions are allowed and expected: they are exactly what the
@@ -212,7 +220,8 @@ the human's behalf.
 ### Phase 1 — Planning
 
 Before invoking `/speckit.plan`, give the planner all three authoritative
-inputs — `spec.md`, `decisions.md`, and `technical-context.md` — and require it
+inputs — `product-spec.md`, `decisions.md`, and `technical-context.md` — and
+require it
 to read all three and follow the authority order documented above. The feature
 spec alone is not sufficient: `decisions.md` carries the decided product
 behavior and the open technical decisions the planner is authorized to resolve,
@@ -266,7 +275,8 @@ them while reviewing. If they change, the review must be rerun.
 Perform a conceptually fresh-context, READ-ONLY review. Use a subagent when the
 environment supports one; do not give it the planning rationale.
 
-Inputs: `spec.md`, `decisions.md`, `technical-context.md`, and the generated
+Inputs: `product-spec.md`, `decisions.md`, `technical-context.md`, and the
+generated
 design artifacts.
 
 The reviewer writes `design-review.md` and nothing else. It MUST NOT edit the
@@ -383,7 +393,7 @@ validator during the run — `TOOLING_BUG` is not part of the review schema. Fix
 tooling outside the run, then rerun.
 
 ```bash
-python .claude/skills/rigorail-design/scripts/validate_design.py --iteration <n> specs/<slug>
+python .claude/skills/rigorail-design/scripts/validate_design.py --iteration <n> docs
 ```
 
 `<n>` is the number of automatic repair rounds already performed in this run,
@@ -459,7 +469,7 @@ For a `PRODUCT_BLOCKER` only:
    product-semantic commitment, why it requires a human, and the decision
    required;
 2. the human decides;
-3. record the decision in the product artifact (`decisions.md`, and `spec.md`
+3. record the decision in the product artifact (`decisions.md`, and `product-spec.md`
    when the decided behavior belongs in the contract);
 4. rerun the preflight, planning, and review.
 
@@ -475,7 +485,7 @@ Freeze the design only when all are true:
 
 - `design-review.md` has `STATUS: READY`;
 - no product contradiction, invention, or blocker remains;
-- every `OPEN_TECHNICAL_DECISION` in `decisions.md` is accounted for;
+- every open `TECHNICAL` decision in `decisions.md` is accounted for;
 - no HIGH `TECHNICAL_INTEGRITY_GAP` remains;
 - deterministic validation exits `0` and its route is `FREEZE`;
 - the human approved the semantic gate when one was required.
@@ -511,7 +521,7 @@ None.
 
 - [MEDIUM] F-001 — plan assumes the framework enforces uniqueness on the link table
   - Evidence: data-model.md, "link table" section
-  - Authoritative inputs: spec.md SC-004 requires the invariant; no source proves
+  - Authoritative inputs: product-spec.md §4.1 requires the invariant; no source proves
     the framework enforces it
   - Classification: INFERENCE
   - Required action: verify before implementation; add an explicit constraint if
@@ -543,17 +553,17 @@ add `Authoritative inputs:` and a `Classification:` of
 `SOURCE FACT` / `HUMAN DECISION` / `INFERENCE` wherever they apply.
 
 `RESOLVED_TECHNICAL_DECISIONS` is an accounting ledger, not a finding category.
-List each `OPEN_TECHNICAL_DECISION` from `decisions.md` that the planner did
+List each open `TECHNICAL` decision from `decisions.md` that the planner did
 decide:
 
 ```md
 - D-011 — resolved in plan.md > Technical Decisions
 ```
 
-Every `OPEN_TECHNICAL_DECISION` declared in `decisions.md` must appear exactly
+Every open `TECHNICAL` decision declared in `decisions.md` must appear exactly
 once, either there or as a finding under `UNRESOLVED_TECHNICAL_DECISIONS` — not
 twice in one section, and not once in each. Only decisions `decisions.md`
-declares as `OPEN_TECHNICAL_DECISION` may be listed as resolved.
+declares as open `TECHNICAL` may be listed as resolved.
 
 ### Status selection
 
